@@ -1,0 +1,42 @@
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+    image: postgres:16.2
+    environment:
+      POSTGRES_DB: rezumix
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - rezumix-network
+
+  rezumix-backend:
+    build: .
+    ports:
+      - "7676:7676"
+    depends_on:
+      - postgres
+    image: rezumix-backend
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres/rezumix
+    networks:
+      - rezumix-network
+
+  rezumix-frontend:
+    build:
+      context: ./../../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - rezumix-backend
+    image: rezumix-frontend
+    networks:
+      - rezumix-network
+
+networks:
+  rezumix-network:
+    driver: bridge

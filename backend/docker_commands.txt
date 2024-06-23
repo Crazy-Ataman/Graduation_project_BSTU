@@ -1,0 +1,5 @@
+Build image 
+docker build -t rezumix .
+
+Build container
+docker run -p 7676:7676 --name rezumix --env-file .env rezumix

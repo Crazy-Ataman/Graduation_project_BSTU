@@ -1,0 +1,3 @@
+For prisma access DB in docker => replace name of container to localhost (out docker)
+(For commands prisma db pull)
+(In docker WRITE name of container)

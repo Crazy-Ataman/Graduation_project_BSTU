@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:password@postgres/rezumix?schema=public"
+}
+
+model resumes {
+  resume_id  String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  title      String   @db.VarChar(250)
+  text       String
+  user_id_fk String?  @db.Uuid
+  visibility String   @default("default_status") @db.VarChar(250)
+  users      users?   @relation(fields: [user_id_fk], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_resumes_users")
+  skills     skills[]
+}
+
+model roles {
+  role_id Int     @id @default(autoincrement()) @db.SmallInt
+  role    String  @unique @db.VarChar(100)
+  users   users[]
+}
+
+model team_members {
+  member_id  String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  team_id_fk String? @db.Uuid
+  user_id_fk String? @db.Uuid
+  status     String  @db.VarChar(250)
+  teams      teams?  @relation(fields: [team_id_fk], references: [team_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_team_members_teams")
+  users      users?  @relation(fields: [user_id_fk], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_team_members_users")
+}
+
+model teams {
+  team_id             String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name                String         @db.VarChar(250)
+  creation_date       DateTime       @default(dbgenerated("timezone('utc-3'::text, CURRENT_TIMESTAMP(0))")) @map("сreation_date") @db.Timestamp(6)
+  important_languages String?        @db.VarChar(500)
+  owner_id_fk         String?        @db.Uuid
+  chats               chats[]
+  team_members        team_members[]
+  users               users?         @relation(fields: [owner_id_fk], references: [user_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_teams_users")
+}
+
+model users {
+  user_id            String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  first_name         String               @db.VarChar(70)
+  last_name          String               @db.VarChar(70)
+  email              String               @unique
+  password           String
+  registration_date  DateTime             @default(dbgenerated("timezone('utc-3'::text, CURRENT_TIMESTAMP(0))")) @db.Timestamp(6)
+  is_approved        Boolean?
+  role_id_fk         Int?                 @db.SmallInt
+  chat_users         chat_users[]
+  messages           messages[]
+  resumes            resumes[]
+  social_media_links social_media_links[]
+  team_members       team_members[]
+  teams              teams[]
+  roles              roles?               @relation(fields: [role_id_fk], references: [role_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_users_roles")
+}
+
+model chats {
+  chat_id    String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name       String       @db.VarChar(250)
+  type       String       @db.VarChar(100)
+  team_id_fk String?      @db.Uuid
+  chat_users chat_users[]
+  teams      teams?       @relation(fields: [team_id_fk], references: [team_id], onDelete: Cascade, onUpdate: NoAction)
+  messages   messages[]
+}
+
+model companies {
+  company_id       String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name             String       @db.VarChar(1000)
+  experience_id_fk String?      @db.Uuid
+  experiences      experiences? @relation(fields: [experience_id_fk], references: [experience_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model experiences {
+  experience_id              String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  start_date                 DateTime?              @db.Date
+  end_date                   DateTime?              @db.Date
+  experience                 Float?                 @db.Real
+  level                      String?                @db.VarChar(50)
+  programming_language_id_fk String?                @db.Uuid
+  companies                  companies[]
+  programming_languages      programming_languages? @relation(fields: [programming_language_id_fk], references: [programming_language_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model messages {
+  message_id   String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  text         String   @db.VarChar(1000)
+  created_date DateTime @default(dbgenerated("timezone('utc-3'::text, CURRENT_TIMESTAMP(0))")) @db.Timestamp(6)
+  user_id_fk   String?  @db.Uuid
+  chat_id_fk   String?  @db.Uuid
+  chats        chats?   @relation(fields: [chat_id_fk], references: [chat_id], onDelete: Cascade, onUpdate: NoAction)
+  users        users?   @relation(fields: [user_id_fk], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model programming_languages {
+  programming_language_id String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  programming_language    String        @db.VarChar(250)
+  skill_id_fk             String?       @db.Uuid
+  experiences             experiences[]
+  skills                  skills?       @relation(fields: [skill_id_fk], references: [skill_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model skills {
+  skill_id              String                  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  resume_id_fk          String?                 @db.Uuid
+  programming_languages programming_languages[]
+  resumes               resumes?                @relation(fields: [resume_id_fk], references: [resume_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model social_media_links {
+  social_media_link_id String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  github               String?
+  linkedin             String?
+  twitter              String?
+  facebook             String?
+  user_id_fk           String? @db.Uuid
+  users                users?  @relation(fields: [user_id_fk], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model chat_users {
+  chat_id String @db.Uuid
+  user_id String @db.Uuid
+  chats   chats  @relation(fields: [chat_id], references: [chat_id], onDelete: Cascade, onUpdate: NoAction)
+  users   users  @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([chat_id, user_id])
+}
